@@ -1,0 +1,170 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endblock %} My store</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="{% static 'main.css' %}">
+    <link href="/media/favicon.ico" rel="icon" type="image/x-icon"/>
+    <link rel="stylesheet" href="https://unpkg.com/placeholder-loading/dist/css/placeholder-loading.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/vuex@3.5.1/dist/vuex.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+</head>
+
+<body>
+
+<div class="preloader">
+    <svg class="preloader__image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <path fill="currentColor"
+              d="M304 48c0 26.51-21.49 48-48 48s-48-21.49-48-48 21.49-48 48-48 48 21.49 48 48zm-48 368c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm208-208c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zM96 256c0-26.51-21.49-48-48-48S0 229.49 0 256s21.49 48 48 48 48-21.49 48-48zm12.922 99.078c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.491-48-48-48zm294.156 0c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.49-48-48-48zM108.922 60.922c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.491-48-48-48z">
+        </path>
+    </svg>
+</div>
+
+<nav class="navbar is-dark" id="navbarapp">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="{% url 'frontpage' %}">My store</a>
+
+        <a @click="toggleMenu()" role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
+           data-target="main-navbar">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+    </div>
+
+    <div id="main-navbar" class="navbar-menu" :class="{ 'is-active': menuClass }">
+        <div class="navbar-start">
+            <div class="navbar-item">
+                <form method="get" action="{% url 'search' %}">
+                    <div class="field has-addons">
+                        <div class="control">
+                            <input type="text" class="input" placeholder="Search..." name="query">
+                        </div>
+                        <div class="control">
+                            <button class="button is-success">Search</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="navbar-end">
+            {% for category in menu_categories %}
+            {% if not category.children.all %}
+            <a href="{% url 'category_detail' category.slug %}" class="navbar-item">{{ category.title }}</a>
+            {% else %}
+            <div class="navbar-item has-dropdown is-hoverable">
+                <a href="{% url 'category_detail' category.slug %}" class="navbar-link">{{ category.title }}</a>
+
+                <div class="navbar-dropdown">
+                    {% for subcategory in category.children.all %}
+                    <a href="{% url 'category_detail' subcategory.slug %}" class="navbar-item">
+                        {{ subcategory.title }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            <div class="navbar-item">
+                <a href="{% url 'cart' %}" class="button is-primary">Cart ([[ numItems ]])</a>
+            </div>
+
+            {% if request.user.is_authenticated %}
+            <div class="navbar-item">
+                <a href="{% url 'myaccount' %}" class="button is-light">My account</a>
+            </div>
+            {% else %}
+            <div class="navbar-item">
+                <div class="buttons">
+                    <a href="{% url 'signup' %}" class="button is-primary"><strong>Sign up</strong></a>
+                    <a href="{% url 'login' %}" class="button is-light">Log in</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<section class="section">
+    {% block content %}
+    {% endblock %}
+</section>
+
+{% include 'parts/newsletter.html' %}
+
+<div class="footer">
+    <div class="columns">
+        <div class="column is-4">
+            <h2 class="subtitle">My store</h2>
+        </div>
+        <div class="column is-8">
+            <a href="{% url 'contact' %}" class="navbar-item">Contact</a>
+            <a href="{% url 'about' %}" class="navbar-item">About</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    var store = new Vuex.Store({
+        delimiters: ['[[', ']]'],
+        state: {
+            numItems: {{ cart.get_total_length }},
+            totalCost: {{ cart.get_total_cost }}
+		},
+        mutations: {
+            increment(state, quantity) {
+                state.numItems += quantity;
+            },
+            changeTotalCost(state, newCost) {
+                state.totalCost += newCost
+            }
+        }
+    });
+
+    var navbarapp = new Vue({
+        el: '#navbarapp',
+        delimiters: ['[[', ']]'],
+        store: store,
+        data () {
+            return {
+                menuClass: false
+            }
+        },
+        computed: {
+            numItems: function() {
+                return store.state.numItems
+            },
+            totalCost: function() {
+                return store.state.totalCost
+            }
+        },
+        methods: {
+            toggleMenu() {
+                this.menuClass = !this.menuClass;
+            }
+        }
+    });
+</script>
+
+<script>
+window.onload = function () {
+    document.body.classList.add('loaded_hiding');
+    window.setTimeout(function () {
+        document.body.classList.add('loaded');
+        document.body.classList.remove('loaded_hiding');
+    }, 500);
+}
+</script>
+
+{% block scripts %}
+{% endblock%}
+
+</body>
+</html>

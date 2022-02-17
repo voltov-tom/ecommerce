@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.title }} |{% endblock %}
+
+{% block content %}
+<div id="productapp">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'frontpage' %}">Home</a></li>
+            {% if product.category.parent %}
+            <li>
+                <a href="{% url 'category_detail' product.category.parent.slug %}">
+                    {{ product.category.parent.title}}
+                </a>
+            </li>
+            {% endif %}
+            <li>
+                <a href="{% url 'category_detail' product.category.slug %}">{{ product.category.title }}</a>
+            </li>
+            <li class="is-active">
+                <a href="{% url 'product_detail' product.category.slug product.slug %}">{{ product.title }}</a>
+            </li>
+        </ul>
+    </nav>
+    <h1 class="title">{{ product.title }}</h1>
+    <img :src="mainImage" onerror="this.src='/media/no_photo.jpeg'">
+
+    <hr>
+
+    {% if product.images.all %}
+    <div class="columns">
+        <div class="column is-2" v-for="image in images">
+            <figure class="image is-128x128">
+                <img :src="image.thumbnail" @click="changeMainImage(image.image)" onerror="this.src='/media/no_photo.jpeg'">
+            </figure>
+        </div>
+    </div>
+    {% endif %}
+
+    <hr>
+
+    <span class="icon-text">
+        <span><strong>${{ product.price }}</strong></span>
+        <span class="icon">
+            <ion-icon name="star-outline"></ion-icon>
+        </span>
+        <span>
+            {% if product.get_rating == 0 %}No ratings yet{% else %}{{ product.get_rating|floatformat:2 }}{% endif %}
+        </span>
+    </span>
+
+    {% if product.description %}
+    <h3>Description:</h3>
+    <p>{{ product.description }}</p>
+    {% endif %}
+
+    {% if product.variants.all %}
+    {{ product }}
+    <div class="columns">
+        <div class="column">
+            <table class="table is-fullwidth">
+                <tbody>
+                <tr>
+                    <td>
+                        <figure class="image is-48x48">
+                            {% if product.thumbnail %}
+                            <img src="{{ product.get_thumbnail }}">
+                            {% endif %}
+                        </figure>
+                    </td>
+                    <td>
+                        {{ product.title }}
+                    </td>
+                    <td>
+                        {% if product.in_cart %}
+                        <div class="navbar-item">
+                            <a href="{% url 'cart' %}" class="button is-primary">Already in cart!</a>
+                        </div>
+                        {% else %}
+                        {% if product.num_available > 0 %}
+                        <button @click="addToCart({{ product.id }})" class="button is-success">Add to cart</button>
+                        {% else %}
+                        <p>The product is out of stock!</p>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% for variant in product.variants.all %}
+                {{ variant.in_cart }}
+                <tr>
+                    <td>
+                        <figure class="image is-48x48">
+                            {% if variant.thumbnail %}
+                            <img src="{{ variant.get_thumbnail }}">
+                            {% endif %}
+                        </figure>
+                    </td>
+                    <td>
+                        {{ variant.title }}
+                    </td>
+                    <td>
+                        {% if variant.in_cart %}
+                        <div class="navbar-item">
+                            <a href="{% url 'cart' %}" class="button is-primary">Already in cart!</a>
+                        </div>
+                        {% else %}
+                        {% if variant.num_available > 0 %}
+                        <button @click="addToCart({{ variant.id }})" class="button is-success">Add to cart</button>
+                        {% else %}
+                        <p>The product is out of stock!</p>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    {% if product.in_cart %}
+    <p>Already in cart!</p>
+    {% else %}
+    {% if product.num_available > 0 %}
+    <button @click="addToCart({{ product.id }})" class="button is-success">Add to cart</button>
+    {% else %}
+    <p>The product is out of stock!</p>
+    {% endif %}
+    {% endif %}
+    {% endif %}
+
+
+    <article class="message is-primary" v-if="showMessage">
+        <div class="message-body">
+            <p>The product was added to the cart!</p>
+        </div>
+    </article>
+
+    <hr>
+
+    <h2 class="subtitle">Related products</h2>
+
+    {% with related_products as list_products %}
+    {% include 'parts/product_list.html' %}
+    {% endwith %}
+
+    <hr>
+
+    <h2 class="subtitle">Reviews</h2>
+    <div class="reviews-wrapper">
+        {% for review in product.reviews.all %}
+        <div class="notification space-below">
+            <p>
+                <strong>User: </strong>{{ review.user }},
+                <strong>Date: </strong>{{ review.date_added|date:"d.m.Y" }},
+                <strong>Stars: </strong>{{ review.stars }},
+            </p>
+            {{ review.content }}
+        </div>
+        {% empty %}
+        <div class="notification space-below">
+            No reviews yet.
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="notification space-below">
+        {% if request.user.is_authenticated %}
+        <form method="post" action=".">
+            {% csrf_token %}
+
+            <div class="field">
+                <label>Stars</label>
+                <div class="control">
+                    <div class="select">
+                        <select name="stars">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5" selected>5</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <label>Content</label>
+                <div class="control">
+                    <textarea class="textarea" name="content"></textarea>
+                </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                    <button class="button is-success">Submit</button>
+                </div>
+            </div>
+        </form>
+        {% else %}
+        <p>Please
+            <a href="{% url 'signup' %}"><strong>sign up</strong></a>
+            or
+            <a href="{% url 'login' %}"><strong>log in</strong></a>
+            to leave a comment
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+{% include 'parts/recently_viewed_products.html' %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var productapp = new Vue({
+        el: '#productapp',
+        delimeters: ['[[', ']]'],
+        store: store,
+        data () {
+            return {
+                showMessage: false,
+                mainImage: '{{ product.image.url }}',
+                images: {{ imageString|safe }}
+            }
+        },
+        computed: {
+            numItems: function() {
+                return store.state.numItems
+            }
+        },
+        methods: {
+            changeMainImage(image){
+                this.mainImage = image;
+            },
+            addToCart(product_id) {
+                var data = {
+                    'product_id': product_id,
+                    'update': false,
+                    'quantity': 1
+                };
+
+                fetch('/api/add-to-cart/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(data)
+                })
+
+                .then((response) => {
+                    console.log(response),
+
+                    this.showMessage = true
+
+                    setTimeout(() => {
+                        this.showMessage = false
+                    }, 3000)
+
+                    store.commit('increment', 1);
+                    console.log(store)
+                })
+
+                .catch(function (error) {
+                    console.log(error);
+                })
+            }
+        }
+    });
+
+</script>
+{% endblock %}

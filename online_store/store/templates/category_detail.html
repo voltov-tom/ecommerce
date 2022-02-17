@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.title }} |{% endblock %}
+
+{% block content %}
+
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{% url 'frontpage' %}">Home</a></li>
+        {% if category.parent %}
+        <li><a href="{% url 'category_detail' category.parent.slug %}">{{ category.parent.title }}</a></li>
+        {% endif %}
+        <li class="is-active"><a href="{% url 'category_detail' category.slug %}">{{ category.title }}</a></li>
+    </ul>
+</nav>
+<h1 class="title">{{ category.title }}</h1>
+
+{% if category.children.all %}
+
+{% with category as category_list %}
+{% include 'parts/category_list.html' %}
+{% endwith %}
+
+{% else %}
+
+{% with products as list_products %}
+{% include 'parts/product_list.html' %}
+{% endwith %}
+
+{% endif %}
+
+{% include 'parts/recently_viewed_products.html' %}
+
+{% endblock content %}

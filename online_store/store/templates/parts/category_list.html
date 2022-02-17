@@ -1,0 +1,27 @@
+<div class="columns is-multiline">
+    {% for category in category_list.children.all %}
+    <div class="column is-3">
+        <div class="card">
+            <div class="card-content">
+                <div class="media">
+                    <div class="media-content">
+                        <div class="card-image">
+                            <a class="card-footer-item"
+                               href="{% url 'category_detail' category.slug %}">
+                                <figure class="image">
+                                    {% if category.products.first.image %}
+                                    <img src="{{ category.products.first.image.url }}" onerror="this.src='/media/no_photo.jpeg'">
+                                    {% else %}
+                                    <img src="/media/no_photo.jpeg">
+                                    {% endif %}
+                                </figure>
+                            </a>
+                        </div>
+                        <p class="title is-4">{{ category.title }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

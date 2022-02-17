@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome |{% endblock %}
+
+{% block content %}
+
+<h2 class="subtitle has-text-centered">Featured products</h2>
+{% with products as list_products %}
+{% include 'parts/product_list.html' %}
+{% endwith %}
+
+<hr>
+
+<h2 class="subtitle has-text-centered">Categories</h2>
+    {% for subcategory in parent_categories.all %}
+    <div class="column is-3">
+        <a href="{% url 'category_detail' subcategory.slug %}">
+            <h2 class="subtitle">{{ subcategory.title }}</h2>
+        </a>
+    </div>
+        {% with subcategory as category_list %}
+        {% include 'parts/category_list.html' %}
+        {% endwith %}
+    {% endfor %}
+
+<h2 class="subtitle has-text-centered">Popular products</h2>
+{% with popular_products as list_products %}
+{% include 'parts/product_list.html' %}
+{% endwith %}
+
+{% include 'parts/recently_viewed_products.html' %}
+
+{% endblock content %}
